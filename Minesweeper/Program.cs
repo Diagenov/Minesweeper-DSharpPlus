@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
-using System.Runtime.InteropServices;
+//using System.Runtime.InteropServices;
 
 namespace Minesweeper
 {
@@ -13,19 +13,19 @@ namespace Minesweeper
     {
         static bool run = true;
 
-        [DllImport("user32.dll")]
+        /*[DllImport("user32.dll")]
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         [DllImport("kernel32.dll")]
         static extern IntPtr GetConsoleWindow();
 
-        [STAThread]
+        [STAThread]*/
         static void Main(string[] args)
         {
-            MainAsync(GetConsoleWindow()).ConfigureAwait(false).GetAwaiter().GetResult();
+            MainAsync(/*GetConsoleWindow()*/).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        static async Task MainAsync(IntPtr handle)
+        static async Task MainAsync(/*IntPtr handle*/)
         {
             var ms = new Minesweeper();
 
@@ -38,7 +38,7 @@ namespace Minesweeper
                     break;
             }
 
-            ShowWindow(handle, 0);
+            //ShowWindow(handle, 0);
             while (run) { }
         }
 
