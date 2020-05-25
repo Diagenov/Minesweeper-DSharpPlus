@@ -72,7 +72,7 @@ namespace Minesweeper
 
             async Task<DiscordEmbedBuilder> GetFieldAsync(DiscordUser sender, int sizeX = 10, int sizeY = 10, int bombsCount = 10)
             {
-                var field = await CreateFieldAsync(sizeX > 15 || sizeX < 5 ? 10 : sizeX, sizeY > 15 || sizeY < 5 ? 10 : sizeY, bombsCount < 3 || bombsCount > 20 ? 10 : bombsCount);
+                var field = await CreateFieldAsync(sizeX > 20 || sizeX < 5 ? 10 : sizeX, sizeY > 20 || sizeY < 5 ? 10 : sizeY, bombsCount < 3 || bombsCount > 20 ? 10 : bombsCount);
 
                 var embed = new DiscordEmbedBuilder
                 {
@@ -156,7 +156,7 @@ namespace Minesweeper
                     {
                         var args = e.Message.Content.Split(' ').Skip(1).ToArray();
 
-                        if (args.Length > 0 && args[0] == "close" && (await e.Guild.GetMemberAsync(e.Author.Id)).Roles.Any(r => new ulong[] { 492958341283446784u, 255317437149478912u }.Any(ul => ul == r.Id)))
+                        if (args.Length > 0 && args[0].ToLowerInvariant() == "stop" && (await e.Guild.GetMemberAsync(e.Author.Id)).Roles.Any(r => new ulong[] { 492958341283446784u, 255317437149478912u }.Any(ul => ul == r.Id)))
                         {
                             await bot.DisconnectAsync();
                             run = false;
