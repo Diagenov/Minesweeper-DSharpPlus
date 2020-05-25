@@ -5,17 +5,27 @@ using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using System.Runtime.InteropServices;
 
 namespace Minesweeper
 {
     class Program
     {
+        static bool run = true;
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
+
+        [STAThread]
         static void Main(string[] args)
         {
-            MainAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            MainAsync(GetConsoleWindow()).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        static async Task MainAsync()
+        static async Task MainAsync(IntPtr handle)
         {
             var ms = new Minesweeper();
 
@@ -28,7 +38,8 @@ namespace Minesweeper
                     break;
             }
 
-            await Task.Delay(-1);
+            ShowWindow(handle, 0);
+            while (run) { }
         }
 
         class Minesweeper
@@ -59,9 +70,9 @@ namespace Minesweeper
                 return result;
             }
 
-            async Task<DiscordEmbedBuilder> GetFieldAsync(DiscordUser sender, int sizeX = 10, int sizeY = 10, int bombsCount = 3)
+            async Task<DiscordEmbedBuilder> GetFieldAsync(DiscordUser sender, int sizeX = 10, int sizeY = 10, int bombsCount = 10)
             {
-                var field = await CreateFieldAsync(sizeX > 15 || sizeX < 5 ? 10 : sizeX, sizeY > 15 || sizeY < 5 ? 10 : sizeY, bombsCount < 3 || bombsCount > 10 ? 5 : bombsCount);
+                var field = await CreateFieldAsync(sizeX > 15 || sizeX < 5 ? 10 : sizeX, sizeY > 15 || sizeY < 5 ? 10 : sizeY, bombsCount < 3 || bombsCount > 20 ? 10 : bombsCount);
 
                 var embed = new DiscordEmbedBuilder
                 {
@@ -97,14 +108,21 @@ namespace Minesweeper
                 {
                     await Task.Run(async () =>
                     {
-                        for (int i = 0, X, Y; i < bombsCount; i++)
+                        for (int i = 0, X, Y, tryCount = 0; i < bombsCount; i++, tryCount = 0)
+                        {
+                            do
                             {
                                 X = rand.Next(sizeX);
                                 await Task.Delay(150);
                                 Y = rand.Next(sizeY);
+                                tryCount++;
 
-                                field.field[X, Y].type = CellTypes.bomb;
                             }
+                            while (field.field[X, Y].type == CellTypes.bomb && tryCount < 100);
+
+                            if (tryCount < 100)
+                                field.field[X, Y].type = CellTypes.bomb;
+                        }
 
                         for (int x = 0, y, X, Y, count = 0; x < sizeX; x++)
                             for (y = 0, count = 0; y < sizeY; y++, count = 0)
@@ -130,14 +148,22 @@ namespace Minesweeper
 
             async Task MessageCreatedAsync(MessageCreateEventArgs e)
             {
-                if (!e.Author.IsBot && e.Message.Content.StartsWith("!saper") && (e.Message.Content.Length == 6 || e.Message.Content[6] == ' '))
+                if (!e.Author.IsBot && e.Message.Content.ToLowerInvariant().StartsWith("!saper") && (e.Message.Content.Length == 6 || e.Message.Content[6] == ' '))
                 {
                     if (e.Message.Content.Length < 7 || e.Message.Content.Skip(6).All(c => c == ' '))
                         await e.Channel.SendMessageAsync("```Syntax: /saper x y [bombs count]```");
                     else
                     {
                         var args = e.Message.Content.Split(' ').Skip(1).ToArray();
-                        int sizeX = 10, sizeY = 10, bombsCount = 5;
+
+                        if (args.Length > 0 && args[0] == "close" && (await e.Guild.GetMemberAsync(e.Author.Id)).Roles.Any(r => new ulong[] { 492958341283446784u, 255317437149478912u }.Any(ul => ul == r.Id)))
+                        {
+                            await bot.DisconnectAsync();
+                            run = false;
+                            return;
+                        }
+
+                        int sizeX = 10, sizeY = 10, bombsCount = 10;
 
                         if (args.Length < 2 || !int.TryParse(args[0], out sizeX) || !int.TryParse(args[1], out sizeY) || (args.Length == 2 ? false : !int.TryParse(args[2], out bombsCount)))
                             await e.Channel.SendMessageAsync("```diff\n- Invalid syntax! Syntax: /saper x y [bombs count] -\n```");
